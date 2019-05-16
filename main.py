@@ -34,7 +34,8 @@ def dictionarify(sms):
     while True:
         eqindex = sms.find('=', index)
         fieldname = sms[index:eqindex]
-        quoteindex = sms.find('"', eqindex + 2)
+        quotemark = sms[eqindex + 1]
+        quoteindex = sms.find(quotemark, eqindex + 2)
         fieldvalue = sms[eqindex + 2:quoteindex]
         dictionarified[fieldname] = fieldvalue
         index = quoteindex + 2
@@ -44,11 +45,30 @@ def dictionarify(sms):
     
     return dictionarified
 
+def frequency_analysis(somelist):
+    freq = {}
+
+    for elem in somelist:
+        if elem not in freq:
+            freq[elem] = 0
+        
+        freq[elem] += 1
+    
+    for key in sorted(freq.keys(), key = lambda k: -freq[k]):
+        print("{} : {}".format(key, freq[key]))
+
 def main():
     fileraw = get_raw_file()
     smses = get_smses(fileraw)
     smses = dictionarify_smses(smses)
 
-    print(repr(smses[0]))
+    types = [sms['contact_name'] for sms in smses]
+    frequency_analysis(types)
+    # print(repr(smses[0]))
+
+    # for s in smses:
+    #     if 'toa' not in s:
+    #         pr(s)
+    #         a = 1
 
 main()
