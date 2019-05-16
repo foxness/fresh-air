@@ -1,8 +1,13 @@
 import glob
 import datetime
+from decimal import *
 
 def pr(a):
     print(repr(a))
+
+def listy(a):
+    for b in a:
+        print(b)
 
 def get_raw_file():
     filename = glob.glob('*.xml')[0]
@@ -68,10 +73,6 @@ def strip(smses):
     
     return s
 
-def get_transactions(smses):
-    transactions = [sms for sms in smses if sms['address'] == '900']
-    return transactions
-
 def epoch_to_date(epoch):
     if epoch == '0':
         return None
@@ -90,6 +91,83 @@ def parsed_dates(sms):
 def parse_dates(smses):
     return [parsed_dates(sms) for sms in smses]
 
+# def parse_string_date(date):
+#     day, month, year = [int(a) for a in date.split('.')]
+#     return {'day': day, 'month': month, 'year': year + 2000}
+
+# def parse_string_time(time):
+#     hour, minute = [int(a) for a in time.split(':')]
+#     return {'hour': hour, 'minute': minute}
+
+# def get_datetime(date, time):
+#     d = parse_string_date(date)
+#     t = parse_string_time(time)
+#     return datetime.datetime(d['year'], d['month'], d['day'], t['hour'], t['minute'])
+
+def get_transactions(smses):
+    transactions = [sms for sms in smses if sms['address'] == '900']
+    
+    secret = get_secret()
+    for t in transactions:
+        split = t['body'].split(' ')
+        if split[0] == 'VISA' + secret:
+            t['visa'] = True
+            
+            del split[0] # delete visa
+            if split[0][2] == '.':
+                t['datefirst'] = True
+
+                del split[0] # delete date
+            else:
+                t['datefirst'] = False
+            
+            if split[0][0].isdigit():
+                t['notime'] = False
+
+                del split[0] # delete time
+            else:
+                t['notime'] = True
+
+                if split[0] == 'возврат':
+                    t['vozvrat'] = True
+
+                    t['type'] = 'возврат'
+
+                    del split[:2]
+
+                    t['amount'] = parse_money(split[0])
+
+                    del split[0]
+                    
+                    t['balance'] = parse_money(split[-1])
+
+                    del split[-2:]
+
+                    t['service'] = ' '.join(split)
+                else:
+                    t['vozvrat'] = False
+
+                    service_count = 5 if split[0] == 'оплата' else 4
+                    t['service'] = ' '.join(split[:service_count])
+                    t['type'] = 'оплата'
+
+                    del split[:service_count]
+
+                    t['amount'] = parse_money(split[0])
+                    t['balance'] = parse_money(split[-1])
+
+        else:
+            t['visa'] = False
+
+    return transactions
+
+def parse_money(money):
+    return Decimal(money[:-1])
+
+def get_secret():
+    with open('secret', 'r', encoding = 'utf8') as myfile:
+        return myfile.read().strip()
+
 def main():
     fileraw = get_raw_file()
     smses = get_smses(fileraw)
@@ -98,9 +176,9 @@ def main():
     smses = parse_dates(smses)
     transactions = get_transactions(smses)
 
-    # types = [sms['locked'] for sms in smses]
+    bodies = [t['body'] for t in transactions if t['visa'] and t['datefirst'] and not t['notime']]
     # frequency_analysis(types)
 
-    pr(transactions[:2])
+    listy(bodies[:])
 
 main()
