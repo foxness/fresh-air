@@ -59,7 +59,7 @@ def frequency_analysis(somelist):
         print("{} : {}".format(key, freq[key]))
 
 def strip(smses):
-    useless = ['protocol', 'subject', 'toa', 'sc_toa', 'service_center', 'status', 'read', 'locked', 'sub_id', 'type']
+    useless = ['protocol', 'subject', 'toa', 'sc_toa', 'service_center', 'status', 'read', 'locked', 'sub_id', 'type', 'readable_date']
 
     s = [sms.copy() for sms in smses]
     for sms in s:
@@ -73,6 +73,9 @@ def get_transactions(smses):
     return transactions
 
 def epoch_to_date(epoch):
+    if epoch == '0':
+        return None
+
     timestamp = int(epoch) / 1000
     return datetime.datetime.fromtimestamp(timestamp, datetime.timezone.utc).astimezone()
 
@@ -92,12 +95,12 @@ def main():
     smses = get_smses(fileraw)
     smses = dictionarify_smses(smses)
     smses = strip(smses)
-    # smses = parse_dates(smses)
-    # transactions = get_transactions(smses)
+    smses = parse_dates(smses)
+    transactions = get_transactions(smses)
 
     # types = [sms['locked'] for sms in smses]
     # frequency_analysis(types)
 
-    # pr(transactions[:2])
+    pr(transactions[:2])
 
 main()
