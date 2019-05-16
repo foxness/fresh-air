@@ -1,4 +1,5 @@
 import glob
+import datetime
 
 def pr(a):
     print(repr(a))
@@ -57,18 +58,46 @@ def frequency_analysis(somelist):
     for key in sorted(freq.keys(), key = lambda k: -freq[k]):
         print("{} : {}".format(key, freq[key]))
 
+def strip(smses):
+    useless = ['protocol', 'subject', 'toa', 'sc_toa', 'service_center', 'status', 'read', 'locked', 'sub_id', 'type']
+
+    s = [sms.copy() for sms in smses]
+    for sms in s:
+        for field in useless:
+            sms.pop(field)
+    
+    return s
+
+def get_transactions(smses):
+    transactions = [sms for sms in smses if sms['address'] == '900']
+    return transactions
+
+def epoch_to_date(epoch):
+    timestamp = int(epoch) / 1000
+    return datetime.datetime.fromtimestamp(timestamp, datetime.timezone.utc).astimezone()
+
+def parsed_dates(sms):
+    sms = sms.copy()
+
+    sms['date'] = epoch_to_date(sms['date'])
+    sms['date_sent'] = epoch_to_date(sms['date_sent'])
+
+    return sms
+
+def parse_dates(smses):
+    return [parsed_dates(sms) for sms in smses]
+
 def main():
     fileraw = get_raw_file()
     smses = get_smses(fileraw)
     smses = dictionarify_smses(smses)
+    smses = strip(smses)
+    # smses = parse_dates(smses)
+    # transactions = get_transactions(smses)
 
-    types = [sms['contact_name'] for sms in smses]
-    frequency_analysis(types)
-    # print(repr(smses[0]))
+    # types = [sms['locked'] for sms in smses]
+    # frequency_analysis(types)
 
-    # for s in smses:
-    #     if 'toa' not in s:
-    #         pr(s)
-    #         a = 1
+    # pr(transactions[:2])
 
 main()
